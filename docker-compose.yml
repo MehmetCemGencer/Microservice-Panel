@@ -1,0 +1,125 @@
+version: "3.8"
+services:
+    auth:
+        build:
+            context: ./auth-service
+            args:
+                NODE_ENV: development
+        container_name: auth-service
+        ports:
+            - 8000:8000
+        depends_on:
+            redis:
+                condition: service_healthy
+            auth-db:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        volumes:
+            - ./auth-service:/app
+            - /home/cem/Desktop/microservice/auth-service/node_modules
+    product:
+        build:
+            context: ./product-service
+            args:
+                NODE_ENV: development
+        container_name: product-service
+        ports:
+            - 8001:8000
+        depends_on:
+            product-db:
+                condition: service_healthy
+        volumes:
+            - ./product-service:/app
+            - /home/cem/Desktop/microservice/product-service/node_modules
+    store:
+        build:
+            context: ./store-service
+            args:
+                NODE_ENV: development
+        container_name: store-service
+        ports:
+            - 8002:8000
+        depends_on:
+            store-db:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        volumes:
+            - ./store-service:/app
+            - /home/cem/Desktop/microservice/store-service/node_modules
+    client:
+        build: ./shopping-client
+        container_name: shopping-client
+        ports:
+            - 3000:3000
+        volumes:
+            - ./shopping-client:/app
+            - /home/cem/Desktop/microservice/shopping-client/node_modules
+        tty: true
+    auth-db:
+        container_name: auth-db
+        image: postgres:12-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: auth
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=postgres --dbname=auth
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    product-db:
+        container_name: product-db
+        image: postgres:12-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: product
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=postgres --dbname=product
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    store-db:
+        container_name: store-db
+        image: postgres:12-alpine
+        restart: always
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: store
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=postgres --dbname=store
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    redis:
+        image: "redis:alpine"
+        ports:
+            - 6379
+        healthcheck:
+            test: redis-cli ping | grep PONG
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    rabbitmq:
+        restart: always
+        image: "rabbitmq:3.10.7-alpine"
+        container_name: "rabbitmq"
+        ports:
+            - 5672
+            - 15672:15672
+        healthcheck:
+            test: rabbitmq-diagnostics check_port_connectivity
+            interval: 10s
+            timeout: 5s
+            retries: 10

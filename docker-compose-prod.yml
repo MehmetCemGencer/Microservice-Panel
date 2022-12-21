@@ -1,0 +1,191 @@
+version: "3.8"
+services:
+    auth:
+        build:
+            context: ./auth-service
+            args:
+                NODE_ENV: production
+        container_name: auth-service
+        ports:
+            - 8000:8000
+        depends_on:
+            auth-db:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        secrets:
+            - auth_session_secret
+            - auth_db_url
+            - auth_db_port
+            - auth_db_username
+            - auth_db_password
+            - auth_db_name
+            - auth_redis_url
+            - auth_redis_port
+            - auth_mq_url
+        command: node index.js
+    product:
+        build:
+            context: ./product-service
+            args:
+                NODE_ENV: production
+        container_name: product-service
+        ports:
+            - 8000
+        depends_on:
+            product-db:
+                condition: service_healthy
+        secrets:
+            - product_db_url
+            - product_db_port
+            - product_db_username
+            - product_db_password
+            - product_db_name
+        command: node index.js
+    store:
+        build:
+            context: ./store-service
+            args:
+                NODE_ENV: production
+        container_name: store-service
+        ports:
+            - 8000
+        depends_on:
+            store-db:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        secrets:
+            - store_db_url
+            - store_db_port
+            - store_db_username
+            - store_db_password
+            - store_db_name
+            - store_mq_url
+        command: node index.js
+    client:
+        build: ./shopping-client
+        container_name: shopping-client
+        ports:
+            - 3000:3000
+        tty: true
+    auth-db:
+        container_name: auth-db
+        image: postgres:12-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER_FILE: /run/secrets/auth_db_username
+            POSTGRES_PASSWORD_FILE: /run/secrets/auth_db_password
+            POSTGRES_DB_FILE: /run/secrets/auth_db_name
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=$(cat /run/secrets/auth_db_username) --dbname=$(cat /run/secrets/auth_db_name)
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        secrets:
+            - auth_db_username
+            - auth_db_password
+            - auth_db_name
+    product-db:
+        container_name: product-db
+        image: postgres:12-alpine
+        restart: always
+        environment:
+            POSTGRES_USER_FILE: /run/secrets/product_db_username
+            POSTGRES_PASSWORD_FILE: /run/secrets/product_db_password
+            POSTGRES_DB_FILE: /run/secrets/product_db_name
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=$(cat /run/secrets/product_db_username) --dbname=$(cat /run/secrets/product_db_name)
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        secrets:
+            - product_db_username
+            - product_db_password
+            - product_db_name
+    store-db:
+        container_name: store-db
+        image: postgres:12-alpine
+        restart: always
+        environment:
+            POSTGRES_USER_FILE: /run/secrets/store_db_username
+            POSTGRES_PASSWORD_FILE: /run/secrets/store_db_password
+            POSTGRES_DB_FILE: /run/secrets/store_db_name
+        ports:
+            - 5432
+        healthcheck:
+            test: pg_isready --username=$(cat /run/secrets/store_db_username) --dbname=$(cat /run/secrets/store_db_name)
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        secrets:
+            - store_db_username
+            - store_db_password
+            - store_db_name
+    redis:
+        image: "redis:alpine"
+        ports:
+            - 6379
+        healthcheck:
+            test: redis-cli ping | grep PONG
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    rabbitmq:
+        image: "rabbitmq:3.10.7-alpine"
+        container_name: rabbitmq
+        ports:
+            - 5672
+            - 15672:15672
+        healthcheck:
+            test: rabbitmq-diagnostics check_port_connectivity
+            interval: 10s
+            timeout: 5s
+            retries: 10
+secrets:
+    auth_session_secret:
+        file: ./auth_session_secret.txt
+    auth_db_url:
+        file: ./auth_db_url.txt
+    auth_db_port:
+        file: ./auth_db_port.txt
+    auth_db_username:
+        file: ./auth_db_username.txt
+    auth_db_password:
+        file: ./auth_db_password.txt
+    auth_db_name:
+        file: ./auth_db_name.txt
+    auth_redis_url:
+        file: ./auth_redis_url.txt
+    auth_redis_port:
+        file: ./auth_redis_port.txt
+    auth_mq_url:
+        file: ./auth_mq_url.txt
+    product_db_url:
+        file: ./product_db_url.txt
+    product_db_port:
+        file: ./product_db_port.txt
+    product_db_username:
+        file: ./product_db_username.txt
+    product_db_password:
+        file: ./product_db_password.txt
+    product_db_name:
+        file: ./product_db_name.txt
+    store_db_url:
+        file: ./store_db_url.txt
+    store_db_port:
+        file: ./store_db_port.txt
+    store_db_username:
+        file: ./store_db_username.txt
+    store_db_password:
+        file: ./store_db_password.txt
+    store_db_name:
+        file: ./store_db_name.txt
+    store_mq_url:
+        file: ./store_mq_url.txt
