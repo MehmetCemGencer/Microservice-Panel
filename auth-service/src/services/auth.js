@@ -10,7 +10,7 @@ import {
  * @param {string} username
  * @param {string} email
  * @param {string} password
- * @return {{error: string | null, data: {user: {id: string, email: string, password: string}} | null}}
+ * @return {{error: string | null, data: {user: {id: string, username: string, email: string}} | null}}
  */
 export async function registerUser(username, email, password) {
 	return new Promise(async (resolve, reject) => {
@@ -38,26 +38,6 @@ export async function registerUser(username, email, password) {
 					},
 				},
 			})
-			/*await bcrypt.genSalt(9, async function (err, salt) {
-				if (err) return resolve({ error: err.message, data: null })
-
-				await bcrypt.hash(password, salt, async function (err, hash) {
-					if (err) return resolve({ error: err.message, data: null })
-
-					const newUser = await createUser(username, email, hash)
-
-					return resolve({
-						error: null,
-						data: {
-							user: {
-								id: newUser.id,
-								username,
-								email,
-							},
-						},
-					})
-				})
-			})*/
 		} catch (e) {
 			reject(e)
 		}
@@ -76,7 +56,7 @@ export async function comparePasswordAndDeleteUser(id, password) {
 
 			if (!user) return resolve("User not found")
 
-			const isMatch = bcrypt.compare(password, user.password)
+			const isMatch = await bcrypt.compare(password, user.password)
 
 			if (!isMatch) return resolve("Password does not match")
 
