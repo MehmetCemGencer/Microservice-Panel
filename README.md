@@ -17,7 +17,7 @@ git clone https://github.com/MehmetCemGencer/Microservice-Panel.git
 ### 2. Install dependencies
 
 ```sh
-bash ./install-deps.sh
+sh ./install-deps.sh
 ```
 
 ### 3. Start containers
@@ -39,10 +39,10 @@ git clone https://github.com/MehmetCemGencer/Microservice-Panel.git
 ### 2. Create secret files
 
 ```sh
-bash ./create-secret-files.sh
+sh ./create-secret-files.sh
 ```
 
-### 3. Fill secret files according to your use case
+### 3. Fill secret files according to your variables
 
 ### 4. Build and run containers
 
